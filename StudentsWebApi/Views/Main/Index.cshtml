@@ -1,0 +1,213 @@
+﻿<html>
+<head>
+    <title>Students</title>
+    <script src="https://code.jquery.com/jquery-3.2.1.min.js"
+            integrity="sha256-hwg4gsxgFZhOsEEamdOYGBf13FyQuiTwlAQgxVSNgt4="
+            crossorigin="anonymous"></script>
+
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/css/bootstrap.min.css" integrity="sha384-Gn5384xqQ1aoWXA+058RXPxPg6fy4IWvTNh0E263XmFcJlSAwiGgFAW/dAiS6JXm" crossorigin="anonymous">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js" integrity="sha384-ApNbgh9B+Y1QKtv3Rn7W3mgPxhU9K/ScQsAP7hUibX39j7fakFPskvXusvfa0b4Q" crossorigin="anonymous"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0/js/bootstrap.min.js" integrity="sha384-JZR6Spejh4U02d8jOt6vLEHfe/JQGiRRSQQxSfFWpi1MquVdAyjUar5+76PVCmYl" crossorigin="anonymous"></script>
+
+
+    <script>
+
+
+        // defining student object
+        var Student = { stdID: 0, stdName: "", stdAge: 0, stdEmail: "", stdPhone: "" };
+
+        $(document).ready(function () {
+            getStudentsList();
+
+            $('#StudentTable').DataTable();
+        });
+
+
+
+        // func to get all the students to display
+        function getStudentsList() {
+            // Call Web API to get AllStudents
+            $.ajax({
+                url: '/api/Students/',
+                type: 'GET',
+                dataType: 'json',
+                success: function (students) {
+                    StudentListSuccess(students);
+                },
+                error: function (request, message, error) {
+                    handleException(request, message, error);
+                }
+            });
+        }
+
+        // Display all students returned from Web API call
+        function StudentListSuccess(students) {
+            // Iterate over the collection of data
+            $("#StudentTable tbody").remove();
+            $.each(students, function (index, student) {
+                // Add a row to the Student table
+                AddRow(student);
+            });
+        }
+
+        function AddRow(row) {
+            // First check if a <tbody> tag exists, add one if not
+            if ($("#StudentTable tbody").length == 0) {
+                $("#StudentTable").append("<tbody></tbody>");
+            }
+
+            // Append row to <table>
+            $("#StudentTable tbody").append(
+                BuildTableRow(row));
+        }
+
+    
+        function BuildTableRow(tbRow) {
+            var newRow = "<tr>" +
+                "<td>" + tbRow.stdID + "</td>" +
+                "<td><input   class='name form-control' type='text' value='" + tbRow.stdName + "'/></td>" +
+                "<td><input  class='age form-control'  type='text' value='" + tbRow.stdAge + "'/></td>" +
+                "<td><input  class='email form-control' type='text' value='" + tbRow.stdEmail + "'/></td>" +
+                "<td><input  class='phone form-control' type='text' value='" + tbRow.stdPhone + "'/></td>" +
+                "<td>" +
+                "<button type='button' " +
+                "onclick='StudentUpdate(this);' " +
+                "class='btn btn-outline-warning' " +
+                "data-id='" + tbRow.stdID + "' " +
+                "data-name='" + tbRow.stdName + "' " +
+                "data-age='" + tbRow.stdAge + "' " +
+                "data-email='" + tbRow.stdEmail + "' " +
+                "data-phone='" + tbRow.stdPhone + "' " +
+                ">" +
+                "<span class='glyphicon glyphicon-edit' /> Update" +
+                "</button> " +
+                " <button type='button' " +
+                "onclick='StudentDelete(this);'" +
+                "class='btn btn-outline-danger' " +
+                "data-id='" + tbRow.stdID + "'>" +
+                "<span class='glyphicon glyphicon-remove' />Delete" +
+                "</button>" +
+                "</td>" +
+                "</tr>";
+
+            return newRow;
+        }
+
+        function onAdd(item) {
+            var options = {};
+            options.url = "/api/Students";
+            options.type = "POST";
+            var obj = Student;
+            obj.stdName = $("#name").val();
+            obj.stdAge = $("#age").val();
+            obj.stdEmail = $("#email").val();
+            obj.stdPhone = $("#phone").val();
+            options.data = JSON.stringify(obj);
+            options.contentType = "application/json";
+            options.dataType = "html";
+
+            options.success = function (msg) {
+                getStudentsList();
+                $("#msg").html(msg);
+            },
+                options.error = function () {
+                    $("#msg").html("Cannot call Web Api! There is an error");
+                };
+            $.ajax(options);
+        }
+
+        function StudentUpdate(item) {
+            var id = $(item).data("id");
+            var options = {};
+            options.url = "/api/Students/" + id
+            options.type = "PUT";
+
+            var obj = Student;
+            obj.stdID = $(item).data("id");
+            obj.stdName = $(".name", $(item).parent().parent()).val();
+            obj.stdAge = $(".age", $(item).parent().parent()).val();
+            obj.stdEmail = $(".email", $(item).parent().parent()).val();
+            obj.stdPhone = $(".phone", $(item).parent().parent()).val();
+
+            options.data = JSON.stringify(obj);
+            options.contentType = "application/json";
+            options.dataType = "html";
+            options.success = function (msg) {
+                $("#msg").html(msg);
+            };
+            options.error = function () {
+                $("#msg").html("Error while calling the Web API!");
+            };
+            $.ajax(options);
+        }
+
+        function StudentDelete(item) {
+            var id = $(item).data("id");
+            var options = {};
+            options.url = "/api/Students/" + id;
+            options.type = "DELETE";
+            options.dataType = "html";
+            options.success = function (msg) {
+                console.log('msg= ' + msg);
+                $("#msg").html(msg);
+                getStudentList();
+            };
+            options.error = function () {
+                $("#msg").html("Error while calling the Web API!");
+            };
+            $.ajax(options);
+        }
+
+        // Handle exceptions from AJAX calls
+        function handleException(request, message, error) {
+            var msg = "";
+            msg += "Code: " + request.status + "\n";
+            msg += "Text: " + request.statusText + "\n";
+            if (request.responseJSON != null) {
+                msg += "Message" + request.responseJSON.Message + "\n";
+            }
+
+            alert(msg);
+        }
+
+/**/</script>
+</head>
+<body>
+    <div class="container">
+        <h3>Students Table</h3>
+        <div class="card">
+            <div class="card-body">
+                <form>
+                    <label name="name">Name:</label>
+                    <input class="form-control" id="name" type="text" />
+                    <label name="name">Age:</label>
+                    <input class="form-control" id="age" type="number" min="10" max="150" />
+                    <label name="name">Email:</label>
+                    <input class="form-control" id="email" type="text" />
+                    <label name="name">Phone:</label>
+                    <input class="form-control" id="phone" type="text" />
+                    <input class="btn btn-outline-primary" type="button" id="insert" value="Insert" onclick='onAdd(this)' />
+                </form>
+
+            </div>
+        </div>
+        <table class="table table-bordered table-striped" id="StudentTable" cellpadding="1">
+            <thead>
+                <tr>
+                    <th> Id </th>
+                    <th> Name </th>
+                    <th> Age </th>
+                    <th> Email </th>
+                    <th> Phone</th>
+                    <th style="width:200px"> *Action*</th>
+                </tr>
+
+            </thead>
+        </table>
+        <br />
+        <div id="msg"></div>
+
+    </div>
+</body>
+</html>
